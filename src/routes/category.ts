@@ -1,11 +1,13 @@
 import { Router, Request, Response } from 'express';
 import { AppDataSource } from '../data-source';
 import { Category } from '../entity/Category';
+import { checkJwt } from '../middleware/auth'; // Імпорт middleware
 
 const router = Router();
 const categoryRepo = AppDataSource.getRepository(Category);
 
-router.post('/', async (req: Request, res: Response) => {
+// Додаємо checkJwt перед обробником
+router.post('/', checkJwt, async (req: Request, res: Response) => {
     const { name } = req.body;
     if (!name) return res.status(400).json({ error: "Name is required" });
 
@@ -14,12 +16,12 @@ router.post('/', async (req: Request, res: Response) => {
     res.status(201).json(category);
 });
 
-router.get('/', async (req, res) => {
+router.get('/', checkJwt, async (req, res) => {
     const categories = await categoryRepo.find();
     res.json(categories);
 });
 
-router.delete('/', async (req: Request, res: Response) => {
+router.delete('/', checkJwt, async (req: Request, res: Response) => {
     const id = req.query.id as string;
     if (!id) return res.status(400).json({ error: "Provide id as query param" });
 
