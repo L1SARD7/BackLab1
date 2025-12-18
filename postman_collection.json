@@ -1,7 +1,7 @@
 {
 	"info": {
-		"_postman_id": "lab3-collection-id",
-		"name": "Lab 3 Group 31",
+		"_postman_id": "lab4-collection-id",
+		"name": "Lab 4 Group 31 Auth",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
@@ -11,30 +11,44 @@
 		},
 		{
 			"name": "Create Currency (USD)",
-			"event": [{ "listen": "test", "script": { "exec": ["var jsonData = pm.response.json();", "pm.environment.set(\"currencyId\", jsonData.id);"], "type": "text/javascript" } }],
-			"request": { "method": "POST", "url": { "raw": "{{baseUrl}}/currency", "host": ["{{baseUrl}}"], "path": ["currency"] }, "body": { "mode": "raw", "raw": "{ \"code\": \"USD\", \"name\": \"US Dollar\" }", "options": { "raw": { "language": "json" } } } }
+			"request": { "method": "POST", "url": { "raw": "{{baseUrl}}/currency", "host": ["{{baseUrl}}"], "path": ["currency"] }, "body": { "mode": "raw", "raw": "{ \"code\": \"USD\", \"name\": \"US Dollar\" }", "options": { "raw": { "language": "json" } } } },
+            "event": [{ "listen": "test", "script": { "exec": ["var jsonData = pm.response.json();", "pm.environment.set(\"currencyId\", jsonData.id);"], "type": "text/javascript" } }]
 		},
 		{
-			"name": "Create User (with Currency)",
+			"name": "1. Register User",
 			"event": [{ "listen": "test", "script": { "exec": ["var jsonData = pm.response.json();", "pm.environment.set(\"userId\", jsonData.id);"], "type": "text/javascript" } }],
-			"request": { "method": "POST", "url": { "raw": "{{baseUrl}}/user", "host": ["{{baseUrl}}"], "path": ["user"] }, "body": { "mode": "raw", "raw": "{ \"name\": \"Artem Klymchuk\", \"defaultCurrencyId\": \"{{currencyId}}\" }", "options": { "raw": { "language": "json" } } } }
+			"request": { "method": "POST", "url": { "raw": "{{baseUrl}}/user/register", "host": ["{{baseUrl}}"], "path": ["user", "register"] }, "body": { "mode": "raw", "raw": "{ \"name\": \"ArtemK\", \"password\": \"secret123\", \"defaultCurrencyId\": \"{{currencyId}}\" }", "options": { "raw": { "language": "json" } } } }
+		},
+        {
+			"name": "2. Login User (Get Token)",
+			"event": [{ "listen": "test", "script": { "exec": ["var jsonData = pm.response.json();", "pm.environment.set(\"accessToken\", jsonData.access_token);"], "type": "text/javascript" } }],
+			"request": { "method": "POST", "url": { "raw": "{{baseUrl}}/user/login", "host": ["{{baseUrl}}"], "path": ["user", "login"] }, "body": { "mode": "raw", "raw": "{ \"name\": \"ArtemK\", \"password\": \"secret123\" }", "options": { "raw": { "language": "json" } } } }
 		},
 		{
-			"name": "Create User (INVALID)",
-			"request": { "method": "POST", "url": { "raw": "{{baseUrl}}/user", "host": ["{{baseUrl}}"], "path": ["user"] }, "body": { "mode": "raw", "raw": "{ }", "options": { "raw": { "language": "json" } } } }
+			"name": "3. Create Category (Protected)",
+			"request": { 
+                "method": "POST", 
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+                "url": { "raw": "{{baseUrl}}/category", "host": ["{{baseUrl}}"], "path": ["category"] }, 
+                "body": { "mode": "raw", "raw": "{ \"name\": \"Food\" }", "options": { "raw": { "language": "json" } } } 
+            },
+            "event": [{ "listen": "test", "script": { "exec": ["var jsonData = pm.response.json();", "pm.environment.set(\"categoryId\", jsonData.id);"], "type": "text/javascript" } }]
 		},
 		{
-			"name": "Create Category",
-			"event": [{ "listen": "test", "script": { "exec": ["var jsonData = pm.response.json();", "pm.environment.set(\"categoryId\", jsonData.id);"], "type": "text/javascript" } }],
-			"request": { "method": "POST", "url": { "raw": "{{baseUrl}}/category", "host": ["{{baseUrl}}"], "path": ["category"] }, "body": { "mode": "raw", "raw": "{ \"name\": \"Food\" }", "options": { "raw": { "language": "json" } } } }
+			"name": "4. Create Record (Protected)",
+			"request": { 
+                "method": "POST", 
+                "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+                "url": { "raw": "{{baseUrl}}/record", "host": ["{{baseUrl}}"], "path": ["record"] }, 
+                "body": { "mode": "raw", "raw": "{ \"user_id\": \"{{userId}}\", \"category_id\": \"{{categoryId}}\", \"amount\": 500 }", "options": { "raw": { "language": "json" } } } 
+            }
 		},
-		{
-			"name": "Create Record (Valid)",
-			"request": { "method": "POST", "url": { "raw": "{{baseUrl}}/record", "host": ["{{baseUrl}}"], "path": ["record"] }, "body": { "mode": "raw", "raw": "{ \"user_id\": \"{{userId}}\", \"category_id\": \"{{categoryId}}\", \"amount\": 200 }", "options": { "raw": { "language": "json" } } } }
-		},
-		{
-			"name": "Create Record (INVALID - Negative Amount)",
-			"request": { "method": "POST", "url": { "raw": "{{baseUrl}}/record", "host": ["{{baseUrl}}"], "path": ["record"] }, "body": { "mode": "raw", "raw": "{ \"user_id\": \"{{userId}}\", \"category_id\": \"{{categoryId}}\", \"amount\": -100 }", "options": { "raw": { "language": "json" } } } }
+        {
+			"name": "5. Fail Access (No Token)",
+			"request": { 
+                "method": "GET", 
+                "url": { "raw": "{{baseUrl}}/category", "host": ["{{baseUrl}}"], "path": ["category"] }
+            }
 		}
 	]
 }
