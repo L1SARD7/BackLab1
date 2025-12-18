@@ -1,19 +1,16 @@
-# Lab 1: Node.js REST API
+# Lab 3: PostgreSQL, Validation & ORM
 
-## Як запустити
+**Група**: 31
+**Варіант**: 1 (Валюти).
 
-1. **Локально:**
-   ```bash
-   npm install
-   npm run build
-   npm start
-   ```
+## Запуск
+1. Запустити базу:
+   `docker-compose up -d`
+2. Запустити сервер:
+   `npm install && npm run dev`
 
-2. **Через Docker:**
-   ```bash
-   docker-compose up --build
-   ```
-
-## Ендпоінти
-- `GET /` - Головна сторінка
-- `GET /healthcheck` - Перевірка стану (повертає дату і статус)
+## API
+- Users (with default currency)
+- Records (linked to currency)
+- Categories
+- Currencies
