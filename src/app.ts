@@ -1,17 +1,17 @@
-import express, { Request, Response } from 'express';
+import express from 'express';
+import userRouter from './routes/user';
+import categoryRouter from './routes/category';
+import recordRouter from './routes/record';
 
 export const app = express();
 
 app.use(express.json());
 
-app.get('/', (req: Request, res: Response) => {
-    res.status(200).send('Hello! Lab 1 is ready.');
+app.get('/healthcheck', (req, res) => {
+    res.json({ date: new Date().toISOString(), status: 'OK' });
 });
 
-app.get('/healthcheck', (req: Request, res: Response) => {
-    const data = {
-        date: new Date().toISOString(),
-        status: 'OK'
-    };
-    res.status(200).json(data);
-});
+app.use('/user', userRouter);
+app.use('/users', userRouter);
+app.use('/category', categoryRouter);
+app.use('/record', recordRouter);
