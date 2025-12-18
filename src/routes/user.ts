@@ -4,19 +4,30 @@ import { User } from '../entity/User';
 import { Currency } from '../entity/Currency';
 import { validate } from 'class-validator';
 import { CreateUserDto } from '../dto/CreateUserDto';
+import { LoginDto } from '../dto/LoginDto';
 import { plainToClass } from 'class-transformer';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { JWT_SECRET } from '../middleware/auth';
 
 const router = Router();
 const userRepo = AppDataSource.getRepository(User);
 const currencyRepo = AppDataSource.getRepository(Currency);
 
-router.post('/', async (req: Request, res: Response) => {
+// --- REGISTER (Створення юзера з хешуванням пароля) ---
+router.post('/register', async (req: Request, res: Response) => {
     const dto = plainToClass(CreateUserDto, req.body);
     const errors = await validate(dto);
     if (errors.length > 0) return res.status(400).json({ error: "Validation failed", details: errors });
 
+    // Перевірка чи існує такий юзер
+    const existing = await userRepo.findOneBy({ name: dto.name });
+    if (existing) return res.status(409).json({ error: "Username already taken" });
+
     const user = new User();
     user.name = dto.name;
+    // Хешуємо пароль перед збереженням!
+    user.password = await bcrypt.hash(dto.password, 10);
 
     if (dto.defaultCurrencyId) {
         const currency = await currencyRepo.findOneBy({ id: dto.defaultCurrencyId });
@@ -24,27 +35,38 @@ router.post('/', async (req: Request, res: Response) => {
     }
 
     await userRepo.save(user);
-    res.status(201).json(user);
+    
+    // Не повертаємо пароль
+    const { password, ...userResponse } = user;
+    res.status(201).json(userResponse);
 });
 
-router.get('/:id', async (req: Request, res: Response) => {
+// --- LOGIN (Видача токена) ---
+router.post('/login', async (req: Request, res: Response) => {
+    const dto = plainToClass(LoginDto, req.body);
+    const errors = await validate(dto);
+    if (errors.length > 0) return res.status(400).json({ error: "Validation failed" });
+
+    // 1. Шукаємо юзера (додаємо select: ["password"], бо за замовчуванням він прихований)
     const user = await userRepo.findOne({ 
-        where: { id: req.params.id },
-        relations: ["defaultCurrency"]
+        where: { name: dto.name },
+        select: ["id", "name", "password"] 
     });
-    if (!user) return res.status(404).json({ error: 'User not found' });
-    res.json(user);
-});
 
-router.get('/', async (req, res) => {
-    const users = await userRepo.find({ relations: ["defaultCurrency"] });
-    res.json(users);
-});
+    if (!user) return res.status(401).json({ error: "Invalid credentials" });
 
-router.delete('/:id', async (req, res) => {
-    const result = await userRepo.delete(req.params.id);
-    if (result.affected === 0) return res.status(404).json({ error: 'User not found' });
-    res.json({ message: 'User deleted' });
+    // 2. Перевіряємо пароль
+    const isValid = await bcrypt.compare(dto.password, user.password);
+    if (!isValid) return res.status(401).json({ error: "Invalid credentials" });
+
+    // 3. Генеруємо токен
+    const token = jwt.sign(
+        { id: user.id, name: user.name }, 
+        JWT_SECRET, 
+        { expiresIn: '1h' }
+    );
+
+    res.json({ access_token: token });
 });
 
 export default router;
