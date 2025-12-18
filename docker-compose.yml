@@ -1,12 +1,32 @@
 version: '3.8'
 
 services:
+  app:
+    build: .
+    ports:
+      - "1235:1235"
+    depends_on:
+      - db
+    environment:
+      - PORT=1235
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASS=1234        # <--- Твій пароль
+      - DB_NAME=lab3_db
+    restart: on-failure
+
   db:
     image: postgres:15-alpine
     restart: always
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: 1234   # <--- Твій пароль
       POSTGRES_DB: lab3_db
     ports:
-      - "5432:5432"
+      - "5434:5432"         # Зовнішній порт 5434 (безпечний)
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
